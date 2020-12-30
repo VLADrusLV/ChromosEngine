@@ -29,7 +29,7 @@ class ChromosArray(ChromosData):
 
         info_block = self.content.get_block(mode='passport')
         
-        if database:
+        if database != 'None':
 
             self.fid_db = pd.read_excel(database)
             self.fid_db.index = self.fid_db['Comp']
@@ -46,6 +46,10 @@ class ChromosArray(ChromosData):
                 self.process = info[12:]
 
         # self.correct_df = pd.DataFrame(columns=['Time', 'Area', 'Comp'])
+
+    def correct_time(self):
+
+        
 
     # Функция корректирует результаты площади с учетом поправ коэф в любом виде
     def correct_area(self, mode='fid_conc'):
