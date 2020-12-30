@@ -145,7 +145,7 @@ if __name__ == "__main__":
     pass
     
 else:
-    print('connect')
+    print('ChromosCore was conected')
 
 
 

@@ -19,32 +19,67 @@ class ChromosArray(ChromosData):
         # Удобнее работать и хранить всю инфу в виде датафрейма
         self.df = self.content.get_peaks(mode='dataframe')
 
-        # Получаем данные о режиме сьемки
+        # Получаем данные о режиме детектирования
         data = list(map(lambda x: x.split('=')[1], self.content.get_block(mode='data')))
-        self.t0 = float(data[0])
-        self.dt = float(data[1])
-        self.len = int(data[2])
+        zero_time = float(data[0])
+        delta_time_reading = float(data[1])
+        len_reading = int(data[2])
         # Преобразование времени в секунды
-        self.time = np.array(range(int(data[2]))) * float(data[1])
+        self.time = np.array((range(len_reading) * delta_time_reading) - zero_time) 
+
         info_block = self.content.get_block(mode='passport')
+        
+        if database:
+
+            self.fid_db = pd.read_excel(database)
+            self.fid_db.index = self.fid_db['Comp']
 
         for info in info_block:
             
             if info.find('Filename') == 0:
                 
-                self.name = info
-                self.file = info.split('\\')[-1]
+                self.full_way = info
+                self.file_name = info.split('\\')[-1]
                 
             if info.find('AnalyseTime') == 0:
                 
                 self.process = info[12:]
 
-            if database:
+        # self.correct_df = pd.DataFrame(columns=['Time', 'Area', 'Comp'])
 
-                self.fid_db = pd.read_excel(database)
-                self.fid_db.index = self.fid_db['Comp']
+    # Функция корректирует результаты площади с учетом поправ коэф в любом виде
+    def correct_area(self, mode='fid_conc'):
+        
+        self.correct_df['Area'] = self.df['Area'] * self.fid_db['K_g']
+        self.correct_df['K_g'] = self.fid_db['K_g']
+        
+        if mode == 'fid_conc':
 
-   
+            self.correct_df['Mass_Conc'] = self.correct_df['Area'] / self.correct_df['Area'].sum()
+
+        if mode == 'mol_conc':
+            
+            self.correct_df['Mass_Conc'] = self.correct_df['Area'] / self.correct_df['Area'].sum()
+            self.correct_df['Mol_Area'] = self.correct_df['Area'] / self.fid_db['Mass']
+            self.correct_df['Mol_Conc'] = self.correct_df['Mol_Area'] / self.correct_df['Mol_Area'].sum()
+            self.correct_df = self.correct_df.drop(columns=['Mol_Area'])
+
+    def sum_area_no_id_fid(self):
+
+        # Запоминаем максимальные значения времени удерживаня
+        max_time = self.df['Time'].max()
+        # Базовые параметры для анализа хроматограмм
+        basic_parameters = ['Time','Area']
+        # Групируем все компоненты NO_ID сумируются
+        self.correct_df = self.df.groupby(['Comp'])[basic_parameters].mean()
+        # Добовляем к комп NO_ID максимальное время, что бы точно был в конце
+        
+        try:
+            self.correct_df.loc['No_ID']['Time'] = max_time + 1
+        except KeyError:
+            pass
+            
+           
     def time_slot(self, time_min, time_max):
 
         index_points = []
@@ -110,5 +145,9 @@ class ChromosArray(ChromosData):
     def shift_height(self, delta_height):
 
         self.y = self.y + delta_height
- 
 
+if __name__ == "__main__":
+    pass
+
+else:
+    print('ChromosArray was conected')
