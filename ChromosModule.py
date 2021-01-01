@@ -28,8 +28,8 @@ class ChromosArray(ChromosData):
         zero_time = float(data[0])
         delta_time_reading = float(data[1])
         len_reading = int(data[2])
-        # Преобразование времени в секунды
-        self.time = np.array((range(len_reading) * delta_time_reading) - zero_time) 
+        # Преобразование времени в сeекунд
+        self.time = np.array(range(len_reading)) * delta_time_reading
 
         info_block = self.content.get_block(mode='passport')
         
@@ -37,6 +37,9 @@ class ChromosArray(ChromosData):
 
             self.fid_db = pd.read_excel(database)
             self.fid_db.index = self.fid_db['Comp']
+            self.len_db = len(self.fid_db)
+            self.fid_db = self.fid_db.sort_values(by=['RT'])
+            print(f'Database FID was conecting - {database}')
 
         for info in info_block:
             
@@ -51,13 +54,62 @@ class ChromosArray(ChromosData):
 
         # self.correct_df = pd.DataFrame(columns=['Time', 'Area', 'Comp'])
 
-    def correct_time_height(self):
+    def find_component_in_db(self, time_test_comp):
 
-        temp_df_for_ind = self.correct_df.sort_values(by=['Height'], ascending=False)
+        min_delta = None
+        find_index = None
+
+        for db_index in range(self.len_db):
+                    
+            test_delta_time = abs(time_test_comp - self.fid_db.iloc[db_index]['RT'])
+            
+            if db_index == 0:
+
+                min_delta = test_delta_time
+
+            if test_delta_time <= min_delta:
+
+                min_delta = test_delta_time
+                find_index = db_index
+
+            else:
+
+                return self.fid_db.iloc[find_index]['Comp'], min_delta                
+        
         
 
+    
+    def correct_time(self, mode='height'):
 
+        if mode == 'height':
+            
+            self.correct_df = self.df
+            temp_df_for_ind = self.df.sort_values(by=['Height'], ascending=False)
+            first_comp, first_delta_time = self.find_component_in_db(temp_df_for_ind.iloc[0]['Time'])
+            self.correct_df = self.correct_df['Time'] + first_delta_time
+            height_first_comp = temp_df_for_ind.iloc[0]['Height']
+            height_second_comp = temp_df_for_ind.iloc[1]['Height']
+            min_height_comp = temp_df_for_ind.iloc[-1]['Height']
+            
+            print('Time was correcting by Height')
+            print(f'Component with very height intensity is {first_comp}')
+            print(f'Intensity of very height component is {height_first_comp}')
+            print(f'Min intensity of component chromatography is {min_height_comp}')
+            print(first_delta_time)
+            second_comp, second_delta_time = self.find_component_in_db(temp_df_for_ind.iloc[1]['Time'])
+            print(f'Component with second height intensity if {second_comp}')
+            print(f'Height of second comp is {height_second_comp}')
+            print(second_delta_time)
+            print(f'Error is {second_delta_time - first_delta_time}')
 
+        if mode == 'first':
+
+            self.correct_df = self.df
+            self.correct_df = self.correct_df['Time'] + delta_time
+            comp, delta_time = self.find_component_in_db(self.df.iloc[0]['Time'])
+            print('Time was correcting by first peak')
+            print(comp)
+            print(delta_time)
         
 
     # Функция корректирует результаты площади с учетом поправ коэф в любом виде
