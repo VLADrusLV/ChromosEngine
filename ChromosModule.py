@@ -1,8 +1,11 @@
+# Есть основное ядро движка которая обрабатывает данные из файлов
 from ChromosEngine.ChromosCore import ChromosData 
 
+# Все работает на основных и базовых библиотеках
 import numpy as np
 import pandas as pd
 
+# Здесь просто наследуем основной функционал
 class ChromosArray(ChromosData):
     
     """
@@ -16,7 +19,8 @@ class ChromosArray(ChromosData):
         
         # Получаем полный массив хроматограммы
         self.samples = np.array(self.content.get_block(mode='samples'), float)
-        # Удобнее работать и хранить всю инфу в виде датафрейма
+        
+        # Удобнее работать и хранить всю инфу по пикам в виде датафрейма
         self.df = self.content.get_peaks(mode='dataframe')
 
         # Получаем данные о режиме детектирования
@@ -29,7 +33,7 @@ class ChromosArray(ChromosData):
 
         info_block = self.content.get_block(mode='passport')
         
-        if database != 'None':
+        if database:
 
             self.fid_db = pd.read_excel(database)
             self.fid_db.index = self.fid_db['Comp']
@@ -47,7 +51,12 @@ class ChromosArray(ChromosData):
 
         # self.correct_df = pd.DataFrame(columns=['Time', 'Area', 'Comp'])
 
-    def correct_time(self):
+    def correct_time_height(self):
+
+        temp_df_for_ind = self.correct_df.sort_values(by=['Height'], ascending=False)
+        
+
+
 
         
 
