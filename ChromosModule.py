@@ -115,6 +115,23 @@ class ChromosArray(ChromosData):
             print(delta_time)
 
         return first_delta_time
+
+    def detection_comp(self):
+
+        comp_list = []
+        error_list = []
+
+        for index in range(len(self.correct_df)):
+            
+            time = self.correct_df.iloc[index]['Time']
+
+            comp, delta_time = self.find_component_in_db(time, right_time=0.15)
+            
+            comp_list.append(comp)
+            error_list.append(delta_time)
+
+        self.correct_df['Comp'] = comp_list
+        self.correct_df['Error'] = error_list
         
 
     # Функция корректирует результаты площади с учетом поправ коэф в любом виде
@@ -137,17 +154,20 @@ class ChromosArray(ChromosData):
     def sum_area_no_id_fid(self):
 
         # Запоминаем максимальные значения времени удерживаня
-        max_time = self.df['Time'].max()
+        max_time = self.correct_df['Time'].max()
         # Базовые параметры для анализа хроматограмм
         basic_parameters = ['Time','Area']
         # Групируем все компоненты NO_ID сумируются
-        self.correct_df = self.df.groupby(['Comp'])[basic_parameters].mean()
+        self.correct_df = self.correct_df.groupby(['Comp'])[basic_parameters].mean()
         # Добовляем к комп NO_ID максимальное время, что бы точно был в конце
         
         try:
             self.correct_df.loc['No_ID']['Time'] = max_time + 1
         except KeyError:
             pass
+
+        self.correct_df = self.correct_df.sort_values(by=['Time'])
+
             
            
     def time_slot(self, time_min, time_max):
