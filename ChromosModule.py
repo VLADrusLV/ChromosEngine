@@ -110,6 +110,8 @@ class ChromosArray(ChromosData):
             print('Time was correcting by first peak')
             print(comp)
             print(delta_time)
+
+        return first_delta_time
         
 
     # Функция корректирует результаты площади с учетом поправ коэф в любом виде
@@ -205,7 +207,7 @@ class ChromosArray(ChromosData):
 
     def shift_time(self, delta_time):
 
-        self.x = self.x - delta_time
+        self.x = self.x + delta_time
 
     def shift_height(self, delta_height):
 
