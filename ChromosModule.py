@@ -1,6 +1,7 @@
 # Есть основное ядро движка которая обрабатывает данные из файлов
 from ChromosEngine.ChromosCore import ChromosData 
 
+
 # Все работает на основных и базовых библиотеках
 import numpy as np
 import pandas as pd
@@ -29,7 +30,7 @@ class ChromosArray(ChromosData):
         delta_time_reading = float(data[1])
         len_reading = int(data[2])
         # Преобразование времени в сeекунд
-        self.time = np.array(range(len_reading)) * delta_time_reading
+        self.time = (np.array(range(len_reading)) * delta_time_reading) - zero_time
 
         info_block = self.content.get_block(mode='passport')
         
@@ -54,10 +55,11 @@ class ChromosArray(ChromosData):
 
         # self.correct_df = pd.DataFrame(columns=['Time', 'Area', 'Comp'])
 
-    def find_component_in_db(self, time_test_comp):
+    def find_component_in_db(self, time_test_comp, right_time=0.3):
 
         min_delta = None
         find_index = None
+        comp = 'No_ID'
 
         for db_index in range(self.len_db):
                     
@@ -67,26 +69,25 @@ class ChromosArray(ChromosData):
 
                 min_delta = test_delta_time
 
-            if test_delta_time <= min_delta:
-
+            if test_delta_time <= min_delta and test_delta_time <= right_time:
+                
                 min_delta = test_delta_time
                 find_index = db_index
 
-            else:
+        if find_index is not None:
 
-                return self.fid_db.iloc[find_index]['Comp'], min_delta                
+            comp = self.fid_db.iloc[find_index]['Comp']
         
-        
-
+        return comp, min_delta
     
-    def correct_time(self, mode='height'):
+    def correct_time(self, mode='height', time_around=0.5):
 
         if mode == 'height':
             
-            self.correct_df = self.df
+            self.correct_df = self.df.copy()
             temp_df_for_ind = self.df.sort_values(by=['Height'], ascending=False)
-            first_comp, first_delta_time = self.find_component_in_db(temp_df_for_ind.iloc[0]['Time'])
-            self.correct_df = self.correct_df['Time'] + first_delta_time
+            first_comp, first_delta_time = self.find_component_in_db(temp_df_for_ind.iloc[0]['Time'], right_time=time_around)
+            self.correct_df['Time'] = self.correct_df['Time'] + first_delta_time
             height_first_comp = temp_df_for_ind.iloc[0]['Height']
             height_second_comp = temp_df_for_ind.iloc[1]['Height']
             min_height_comp = temp_df_for_ind.iloc[-1]['Height']
@@ -96,17 +97,19 @@ class ChromosArray(ChromosData):
             print(f'Intensity of very height component is {height_first_comp}')
             print(f'Min intensity of component chromatography is {min_height_comp}')
             print(first_delta_time)
-            second_comp, second_delta_time = self.find_component_in_db(temp_df_for_ind.iloc[1]['Time'])
-            print(f'Component with second height intensity if {second_comp}')
+
+            second_comp, second_delta_time = self.find_component_in_db(temp_df_for_ind.iloc[1]['Time'], right_time=time_around)
+            
+            print(f'Component with second height intensity is {second_comp}')
             print(f'Height of second comp is {height_second_comp}')
             print(second_delta_time)
             print(f'Error is {second_delta_time - first_delta_time}')
 
         if mode == 'first':
 
-            self.correct_df = self.df
-            self.correct_df = self.correct_df['Time'] + delta_time
-            comp, delta_time = self.find_component_in_db(self.df.iloc[0]['Time'])
+            self.correct_df = self.df.copy()
+            comp, delta_time = self.find_component_in_db(self.df.iloc[0]['Time'], right_time=time_around)
+            self.correct_df['Time'] = self.correct_df['Time'] + delta_time
             print('Time was correcting by first peak')
             print(comp)
             print(delta_time)
@@ -214,6 +217,7 @@ class ChromosArray(ChromosData):
         self.y = self.y + delta_height
 
 if __name__ == "__main__":
+    
     pass
 
 else:
