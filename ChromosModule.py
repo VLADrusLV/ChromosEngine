@@ -6,6 +6,25 @@ from ChromosEngine.ChromosCore import ChromosData
 import numpy as np
 import pandas as pd
 
+def check_correct_time(method_to_decorate):
+
+    def wrapper(self, *args, **kwargs):
+
+        try:
+            if type(self.correct_df) == 'pandas.core.frame.DataFrame':
+
+                print('Corected DataFrame is')
+
+        except AttributeError:
+
+            self.correct_df = self.df.copy()
+            print('Correct DataFarame was created')
+
+        return method_to_decorate(self, *args, **kwargs)
+    
+    return wrapper
+
+
 # Здесь просто наследуем основной функционал
 class ChromosArray(ChromosData):
     
@@ -142,8 +161,8 @@ class ChromosArray(ChromosData):
 
             self.correct_df['Time'] = self.correct_df['Time'] + delta_time
 
-
-    def detection_comp(self, error_interval=0.15):
+    @check_correct_time
+    def detection_comp(self, error_interval=0.1):
 
         comp_list = []
         error_list = []
@@ -160,8 +179,9 @@ class ChromosArray(ChromosData):
         self.correct_df['Comp'] = comp_list
         self.correct_df['Error'] = error_list
         
-
+    
     # Функция корректирует результаты площади с учетом поправ коэф в любом виде
+    @check_correct_time
     def correct_area(self, mode='fid_conc'):
         
         self.correct_df['Area'] = self.correct_df['Area'] * self.fid_db['K_g']
@@ -178,6 +198,7 @@ class ChromosArray(ChromosData):
             self.correct_df['Mol_Conc'] = self.correct_df['Mol_Area'] / self.correct_df['Mol_Area'].sum()
             self.correct_df = self.correct_df.drop(columns=['Mol_Area'])
 
+    @check_correct_time
     def sum_area_no_id_fid(self):
 
         # Запоминаем максимальные значения времени удерживаня
@@ -194,6 +215,11 @@ class ChromosArray(ChromosData):
             pass
 
         self.correct_df = self.correct_df.sort_values(by=['Time'])
+
+
+    def default_df(self):
+
+        self.correct_df = self.df.copy()
 
             
            
@@ -265,7 +291,8 @@ class ChromosArray(ChromosData):
 
 if __name__ == "__main__":
     
-    pass
+    chrom = ChromosArray('./chrom/24_12_20_10PA/300_whsv_3_0/Deh_EtOH_241220_170238_export.txt', 'DataBase_FID.xlsx')
+    print(chrom.df)
 
 else:
     print('ChromosArray was conected')
