@@ -80,43 +80,70 @@ class ChromosArray(ChromosData):
         
         return comp, min_delta
     
-    def correct_time(self, mode='height', time_around=0.5):
+    def correct_time(self, mode='height', time_around=0.5, error_interval=0.1):
 
         if mode == 'height':
             
+            # Лучше работать с копией
             self.correct_df = self.df.copy()
+            # Сортируем по убыванию в временный df
             temp_df_for_ind = self.df.sort_values(by=['Height'], ascending=False)
+            # Запускаем механизм идентификации, который прописан внутри
             first_comp, first_delta_time = self.find_component_in_db(temp_df_for_ind.iloc[0]['Time'], right_time=time_around)
-            self.correct_df['Time'] = self.correct_df['Time'] + first_delta_time
+            second_comp, second_delta_time = self.find_component_in_db(temp_df_for_ind.iloc[1]['Time'], right_time=time_around)
+            delta_error = second_delta_time - first_delta_time
+
+            # Метод основан на сравнение высот 1 и 2 пика и последнего в размеченных хроматограммах
             height_first_comp = temp_df_for_ind.iloc[0]['Height']
             height_second_comp = temp_df_for_ind.iloc[1]['Height']
             min_height_comp = temp_df_for_ind.iloc[-1]['Height']
             
-            print('Time was correcting by Height')
+            print('##### REPORT #####')
+            print('_____ FIRST HEIGHT COMPONENT ____')
             print(f'Component with very height intensity is {first_comp}')
             print(f'Intensity of very height component is {height_first_comp}')
-            print(f'Min intensity of component chromatography is {min_height_comp}')
             print(first_delta_time)
-
-            second_comp, second_delta_time = self.find_component_in_db(temp_df_for_ind.iloc[1]['Time'], right_time=time_around)
-            
+            print('_____ SECOND HEIGHT COMPONENT ____')
             print(f'Component with second height intensity is {second_comp}')
             print(f'Height of second comp is {height_second_comp}')
             print(second_delta_time)
-            print(f'Error is {second_delta_time - first_delta_time}')
+            print('_____ COMPARE DATA _____')
+            print(f'Min intensity of component chromatography is {min_height_comp}')
+            print(f'Error is {delta_error}')
+
+            if delta_error <= error_interval:
+
+                print('Time was correcting by Height')
+                self.correct_df['Time'] = self.correct_df['Time'] + first_delta_time
+                return first_delta_time
+
+            else:
+
+                answer = input('Do you accept this correction? [Y/n]')
+
+                if answer == 'Y' or answer == 'y':
+
+                    self.correct_df['Time'] = self.correct_df['Time'] + first_delta_time
+                    return first_delta_time
+
+                else:
+
+                    print("Correction wasn't accepted in this metod")
 
         if mode == 'first':
 
             self.correct_df = self.df.copy()
             comp, delta_time = self.find_component_in_db(self.df.iloc[0]['Time'], right_time=time_around)
-            self.correct_df['Time'] = self.correct_df['Time'] + delta_time
+            
+            print('##### REPORT #####')
             print('Time was correcting by first peak')
-            print(comp)
-            print(delta_time)
+            print(f'First component is {comp}')
+            print(f'Error is {delta_time}')
 
-        return first_delta_time
+            self.correct_df['Time'] = self.correct_df['Time'] + delta_time
 
-    def detection_comp(self):
+
+    def detection_comp(self, error_interval=0.15):
 
         comp_list = []
         error_list = []
@@ -125,7 +152,7 @@ class ChromosArray(ChromosData):
             
             time = self.correct_df.iloc[index]['Time']
 
-            comp, delta_time = self.find_component_in_db(time, right_time=0.15)
+            comp, delta_time = self.find_component_in_db(time, right_time=error_interval)
             
             comp_list.append(comp)
             error_list.append(delta_time)
@@ -137,7 +164,7 @@ class ChromosArray(ChromosData):
     # Функция корректирует результаты площади с учетом поправ коэф в любом виде
     def correct_area(self, mode='fid_conc'):
         
-        self.correct_df['Area'] = self.df['Area'] * self.fid_db['K_g']
+        self.correct_df['Area'] = self.correct_df['Area'] * self.fid_db['K_g']
         self.correct_df['K_g'] = self.fid_db['K_g']
         
         if mode == 'fid_conc':
