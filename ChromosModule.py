@@ -11,7 +11,7 @@ def check_correct_time(method_to_decorate):
     def wrapper(self, *args, **kwargs):
 
         try:
-            if type(self.correct_df) == 'pandas.core.frame.DataFrame':
+            if isinstance(self.correct_df, pd.DataFrame):
 
                 print('Corected DataFrame is')
 
@@ -188,7 +188,7 @@ class ChromosArray(ChromosData):
 
             if list(self.correct_df.columns).index('K_g') >= 0:
 
-                print('Correct area was copleted')
+                print('Correct area was completed')
         
         except ValueError:
 
