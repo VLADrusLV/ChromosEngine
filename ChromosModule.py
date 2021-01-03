@@ -183,9 +183,17 @@ class ChromosArray(ChromosData):
     # Функция корректирует результаты площади с учетом поправ коэф в любом виде
     @check_correct_time
     def correct_area(self, mode='fid_conc'):
+
+        try:
+
+            if list(self.correct_df.columns).index('K_g') >= 0:
+
+                print('Correct area was copleted')
         
-        self.correct_df['Area'] = self.correct_df['Area'] * self.fid_db['K_g']
-        self.correct_df['K_g'] = self.fid_db['K_g']
+        except ValueError:
+
+            self.correct_df['Area'] = self.correct_df['Area'] * self.fid_db['K_g']
+            self.correct_df['K_g'] = self.fid_db['K_g']
         
         if mode == 'fid_conc':
 
@@ -193,7 +201,6 @@ class ChromosArray(ChromosData):
 
         if mode == 'mol_conc':
             
-            self.correct_df['Mass_Conc'] = self.correct_df['Area'] / self.correct_df['Area'].sum()
             self.correct_df['Mol_Area'] = self.correct_df['Area'] / self.fid_db['Mass']
             self.correct_df['Mol_Conc'] = self.correct_df['Mol_Area'] / self.correct_df['Mol_Area'].sum()
             self.correct_df = self.correct_df.drop(columns=['Mol_Area'])
